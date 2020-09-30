@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>2017329621180 郑鉴</title>
+<script src="modernizr.js"></script>
+<script type="text/javascript">
+window.addEventListener('load', eventWindowLoaded, false);	
+function eventWindowLoaded() {
+	canvasApp();
+}
+
+function canvasSupport () {
+  	return Modernizr.canvas;
+}
+
+function canvasApp() {
+	
+    if (!canvasSupport()) {
+		return;
+  	}
+	
+	
+	theCanvas = document.getElementById('canvasOne');
+	context = theCanvas.getContext('2d');
+	
+	var formElement = document.getElementById("play");
+	formElement.addEventListener('click', play, false);
+	
+	formElement = document.getElementById("difficulty");
+	formElement.addEventListener('change', difficulty, false);	
+	
+	var game=0;  //用于判定游戏开始和游戏结束
+	var win;  //用于判定胜利是否
+	var comspeed=10;  //用于设定游戏难度，实际上就是电脑的反应速度
+	
+	var w=100;
+	var h=30;
+	var c="#000000";
+	//设置电脑矩形和玩家矩形的相关值
+	var reccomputer={x:theCanvas.width/2-w/2,y:0,width:w,height:h,speed:5}; 
+    var recplayer={x:theCanvas.width/2-w/2,y:theCanvas.height-h,width:w,height:h};
+	
+	//设定球的相关参数
+	var speed = 5;
+	var angle = -1*Math.floor(Math.random()*30+30)-90*Math.floor(1.99*Math.random());
+	var radians =0;
+	var xunits = 0;
+	var yunits = 0; 
+	var ball = {x:theCanvas.width/2, y:theCanvas.height-2*h,radius:30};
+	updateBall();
+	//设置矩形障碍的值
+	var flag=0;
+	var w_=Math.random()*50+100;
+	var h_=Math.random()*50+100;
+	var c_="#"+Math.floor(Math.random()*0xffffff).toString(16);
+	var rec={x:Math.random()*(theCanvas.width-w_-300)+150,y:100+Math.random()*(theCanvas.height-h_-200),width:w_,height:h_,color:c_};
+	
+	//设置鼠标移动响应函数，更新玩家矩形的x坐标值
+	theCanvas.addEventListener("mousemove",move);
+	//循环更新画面
+	function gameLoop() {
+			window.setTimeout(gameLoop, 20);
+			drawScreen()	
+		}
+		
+	gameLoop();
+	
+    function  drawScreen () {
+	    if(game==0)
+		{
+		    context.fillStyle = '#EEEEEE';
+		    context.fillRect(0, 0, theCanvas.width, theCanvas.height);
+		    //Box
+		    context.strokeStyle = '#000000'; 
+		    context.strokeRect(1,  1, theCanvas.width-2, theCanvas.height-2);
+			
+			
+			context.fontSize = 100;
+			context.font ="normal normal 100px sans-serif";
+			context.textBaseline = "middle";
+		    context.textAlign = "center";
+			if(win==1){
+			    context.fillStyle = 'yellow';
+			    context.fillText("You Win!!!",  theCanvas.width/2 ,theCanvas.height/2);
+			}
+			else if(win==0){
+			    context.fillStyle = 'red';
+			    context.fillText("You Lose!!!",  theCanvas.width/2 ,theCanvas.height/2);
+			}
+		}
+		else{
+		context.fillStyle = '#EEEEEE';
+		context.fillRect(0, 0, theCanvas.width, theCanvas.height);
+		//Box
+		context.strokeStyle = '#000000'; 
+		context.strokeRect(1,  1, theCanvas.width-2, theCanvas.height-2);
+		ball.x += xunits;
+		ball.y += yunits;
+		context.fillStyle = "#000000";
+		//画圆
+		context.beginPath();
+		context.arc(ball.x,ball.y,ball.radius,0,Math.PI*2,true);
+		context.closePath();
+		context.fill();
+		//放置障碍矩形
+		placerect();
+		context.fillStyle = rec.color;
+		context.fillRect(rec.x,rec.y,rec.width,rec.height);
+		//更新电脑矩形的坐标
+		updatecomputer();
+		//画出电脑矩形和玩家矩形
+		context.fillStyle = "#000000";
+		context.fillRect(reccomputer.x,reccomputer.y,reccomputer.width,reccomputer.height);
+		context.fillRect(recplayer.x,recplayer.y,recplayer.width,recplayer.height);
+		//碰撞检测
+		collide();
+		
+		if (ball.x > theCanvas.width-ball.radius || ball.x < 0+ball.radius ) {
+			angle = 180 - angle;
+			updateBall();
+		} 
+		if (ball.y > theCanvas.height-ball.radius) {
+			game=0;
+			win=0;
+		}
+		if (ball.y < 0+ball.radius) {
+			game=0;
+			win=1;
+		}
+		}
+  			
+	}
+	
+	function updateBall() {
+	    speed++; //与矩形发生碰撞后增加球的运动速度
+		radians = angle * Math.PI/ 180;
+		xunits = Math.cos(radians) * speed;
+		yunits = Math.sin(radians) * speed;
+	}
+	function placerect(){
+	    while(flag==0){
+		    updaterect();
+		}
+	}
+	function updaterect(){
+	    rec={x:Math.random()*(theCanvas.width-w_-300)+150,y:100+Math.random()*(theCanvas.height-h_-200),width:Math.random()*50+100,height:Math.random()*50+100,color:"#"+Math.floor(Math.random()*0xffffff).toString(16)};
+		var d1=Math.sqrt((rec.width/2)*(rec.width/2)+(rec.height/2)*(rec.height/2));
+	    var d2=Math.sqrt((rec.x+rec.width/2-ball.x)*(rec.x+rec.width/2-ball.x)+(rec.y+rec.height/2-ball.y)*(rec.y+rec.height/2-ball.y));
+	    var d3=ball.radius;
+    	if( d1+d3< d2){
+		    flag=1;
+	    }
+	}
+	function updatecomputer(){
+	    if(ball.x>reccomputer.x+reccomputer.width/2)
+		{
+		    if(speed<comspeed){
+			    reccomputer.x=ball.x-reccomputer.width/2;
+			}
+			else{
+			    reccomputer.x+=comspeed;
+			}
+		}
+		else if(ball.x<reccomputer.x+reccomputer.width/2){
+		    if(speed<comspeed){
+			    reccomputer.x=ball.x-reccomputer.width/2;
+			}
+			else{
+			    reccomputer.x-=comspeed;
+			}
+		}
+	}
+	function collide(){
+	//玩家方块的碰撞检测
+	    //上下
+	    if(ball.x>recplayer.x&&ball.x<(recplayer.x+recplayer.width)){
+		    if(ball.y+ball.radius>=recplayer.y&&ball.y-ball.radius<=recplayer.y+recplayer.height){
+				angle = 360 - angle;
+				updateBall();
+			}
+		}
+        //左右
+		else if(ball.y>recplayer.y&&ball.y<(recplayer.y+recplayer.height)){
+		    if(ball.x+ball.radius>=recplayer.x&&ball.x-ball.radius<=recplayer.x+recplayer.width){
+				angle = 180 - angle;
+				updateBall();
+			}
+		}
+        //左上
+		else if(ball.x<recplayer.x&&ball.y<recplayer.y){
+		    var h1=ball.radius*ball.radius;
+			var h2=(recplayer.x-ball.x)*(recplayer.x-ball.x);
+			var h3=(recplayer.y-ball.y)*(recplayer.y-ball.y);
+		    if(h1>h2+h3){
+			    if(h2>=h3){
+				    angle = 180 - angle;
+				}
+				else{
+				    angle = 360 - angle;
+				}
+				updateBall();
+			}
+		}
+		//右上
+		else if(ball.x>recplayer.x+recplayer.width&&ball.y<recplayer.y){
+		    var h1=ball.radius*ball.radius;
+			var h2=(ball.x-recplayer.x-recplayer.width)*(ball.x-recplayer.x-recplayer.width);
+			var h3=(recplayer.y-ball.y)*(recplayer.y-ball.y);
+		    if(h1>h2+h3){
+			    if(h2>=h3){
+				    angle = 180 - angle;
+				}
+				else{
+				    angle = 360 - angle;
+				}
+				updateBall();
+			}
+		}
+		
+	//电脑方块的碰撞检测
+		//上下
+	    if(ball.x>reccomputer.x&&ball.x<(reccomputer.x+reccomputer.width)){
+		    if(ball.y+ball.radius>=reccomputer.y&&ball.y-ball.radius<=reccomputer.y+reccomputer.height){
+				angle = 360 - angle;
+				updateBall();
+			}
+		}
+        //左右
+		else if(ball.y>reccomputer.y&&ball.y<(reccomputer.y+reccomputer.height)){
+		    if(ball.x+ball.radius>=reccomputer.x&&ball.x-ball.radius<=reccomputer.x+reccomputer.width){
+				angle = 180 - angle;
+				updateBall();
+			}
+		}
+		
+		
+		
+		//左下
+		else if(ball.x<reccomputer.x&&ball.y>reccomputer.y+reccomputer.height){
+		    var h1=ball.radius*ball.radius;
+			var h2=(reccomputer.x-ball.x)*(reccomputer.x-ball.x);
+			var h3=(ball.y-reccomputer.y-reccomputer.height)*(ball.y-reccomputer.y-reccomputer.height);
+		    if(h1>h2+h3){
+			    if(h2>h3){
+				    angle = 180 - angle;
+				}
+				else{
+				    angle = 360 - angle;
+				}
+				updateBall();
+			}
+		}
+		//右下
+		else if(ball.x>reccomputer.x+reccomputer.width&&ball.y>reccomputer.y+reccomputer.height){
+		    var h1=ball.radius*ball.radius;
+			var h2=(ball.x-reccomputer.x-reccomputer.width)*(ball.x-reccomputer.x-reccomputer.width);
+			var h3=(ball.y-reccomputer.y-reccomputer.height)*(ball.y-reccomputer.y-reccomputer.height);
+		    if(h1>h2+h3){
+			    if(h2>h3){
+				    angle = 180 - angle;
+				}
+				else{
+				    angle = 360 - angle;
+				}
+				updateBall();
+			}
+		}
+		
+		//障碍矩形的碰撞检测
+		if(ball.x>rec.x&&ball.x<(rec.x+rec.width)){
+		    if(ball.y+ball.radius>=rec.y&&ball.y-ball.radius<=rec.y+rec.height){
+			    flag=0;
+				angle = 360 - angle;
+				updateBall();
+				placerect();
+			}
+		}
+
+		else if(ball.y>rec.y&&ball.y<(rec.y+rec.height)){
+		    if(ball.x+ball.radius>=rec.x&&ball.x-ball.radius<=rec.x+rec.width){
+			    flag=0;
+				angle = 180 - angle;
+				updateBall();
+				placerect();
+			}
+		}
+
+		else if(ball.x<rec.x&&ball.y<rec.y){
+		    var h1=ball.radius*ball.radius;
+			var h2=(rec.x-ball.x)*(rec.x-ball.x);
+			var h3=(rec.y-ball.y)*(rec.y-ball.y);
+		    if(h1>h2+h3){
+			    flag=0;
+			    if(h2>=h3){
+				    angle = 180 - angle;
+				}
+				else{
+				    angle = 360 - angle;
+				}
+				updateBall();
+				placerect();
+			}
+		}
+		else if(ball.x>rec.x+rec.width&&ball.y<rec.y){
+		    var h1=ball.radius*ball.radius;
+			var h2=(ball.x-rec.x-rec.width)*(ball.x-rec.x-rec.width);
+			var h3=(rec.y-ball.y)*(rec.y-ball.y);
+		    if(h1>h2+h3){
+			    flag=0;
+			    if(h2>=h3){
+				    angle = 180 - angle;
+				}
+				else{
+				    angle = 360 - angle;
+				}
+				updateBall();
+				placerect();
+			}
+		}
+		else if(ball.x<rec.x&&ball.y>rec.y+rec.height){
+		    var h1=ball.radius*ball.radius;
+			var h2=(rec.x-ball.x)*(rec.x-ball.x);
+			var h3=(ball.y-rec.y-rec.height)*(ball.y-rec.y-rec.height);
+		    if(h1>h2+h3){
+			    flag=0;
+			    if(h2>h3){
+				    angle = 180 - angle;
+				}
+				else{
+				    angle = 360 - angle;
+				}
+				updateBall();
+				placerect();
+			}
+		}
+		else if(ball.x>rec.x+rec.width&&ball.y>rec.y+rec.height){
+		    var h1=ball.radius*ball.radius;
+			var h2=(ball.x-rec.x-rec.width)*(ball.x-rec.x-rec.width);
+			var h3=(ball.y-rec.y-rec.height)*(ball.y-rec.y-rec.height);
+		    if(h1>h2+h3){
+			    flag=0;
+			    if(h2>h3){
+				    angle = 180 - angle;
+				}
+				else{
+				    angle = 360 - angle;
+				}
+				updateBall();
+				placerect();
+			}
+		}
+	}
+	
+	function move(e){
+		recplayer.x=e.clientX-theCanvas.getBoundingClientRect().left-recplayer.width/2;
+	}
+	
+	function play(){
+		game=1;
+		speed = 5;
+	    angle = -1*Math.floor(Math.random()*30+30)-90*Math.floor(1.99*Math.random());//设置角度为随机角度
+	    radians =0;
+	    xunits = 0;
+	    yunits = 0; 
+		flag==0;
+	    ball = {x:theCanvas.width/2, y:theCanvas.height-2*h,radius:30};
+		updateBall();
+	    w_=Math.random()*50+100;
+    	h_=Math.random()*50+100;
+    	c_="#"+Math.floor(Math.random()*0xffffff).toString(16);
+	    rec={x:Math.random()*(theCanvas.width-w_-300)+150,y:100+Math.random()*(theCanvas.height-h_-200),width:w_,height:h_,color:c_};
+	}
+	function difficulty(e){
+	    var target =  e.target;
+		if(target.value==10)
+		comspeed = 10;
+		else if(target.value==20)
+		comspeed = 20;
+		else if(target.value==30)
+		comspeed = 30;
+	}
+
+	
+}
+
+</script>
+
+</head>
+<body> 
+<div style="position: absolute; top: 50px; left: 50px;">
+
+<canvas id="canvasOne" width="1000" height="800">
+ Your browser does not support the HTML 5 Canvas. 
+</canvas>
+<br>
+<input type="button" id="play" value="Play game">
+Difficulty:<select id="difficulty">
+  <option value="10">easy</option>
+  <option value="20">medium</option>
+  <option value="30">hard</option>
+  </select>
+ <br>  
+</div>
+
+</body>
+</html>
